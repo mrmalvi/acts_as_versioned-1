@@ -334,7 +334,7 @@ module ActiveRecord #:nodoc:
         def clone_versioned_model(orig_model, new_model)
           self.class.versioned_columns.each do |col|
             next unless orig_model.has_attribute?(col.name)
-            define_attr_accessor(new_model, col.name.to_sym)
+            define_method(new_model, col.name.to_sym)
             new_model.send("#{col.name.to_sym}=", orig_model.send(col.name))
           end
 
@@ -342,15 +342,15 @@ module ActiveRecord #:nodoc:
             new_model[new_model.class.inheritance_column] = orig_model[self.class.versioned_inheritance_column]
           elsif new_model.is_a?(self.class.versioned_class)
             sym = self.class.versioned_inheritance_column.to_sym
-            define_attr_accessor(new_model, sym)
+            define_method new_model, sym
             new_model.send("#{sym}=", orig_model[orig_model.class.inheritance_column]) if orig_model[orig_model.class.inheritance_column]
           end
         end
 
-        def define_attr_accessor(obj, method)
-          return if obj.respond_to?(method)
-          eigenclass = class << obj; self; end
-          eigenclass.attr_accessor method
+        def define_method(object, method)
+          return if object.methods.include? method
+          metaclass = class << object; self; end
+          metaclass.send :attr_accessor, method
         end
 
         # Checks whether a new version shall be saved or not.  Calls <tt>version_condition_met?</tt> and <tt>changed?</tt>.
